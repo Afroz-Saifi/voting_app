@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vote</title>
+    <script
+      src="https://cdn.socket.io/4.6.0/socket.io.min.js"
+      integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      .container {
+        display: flex;
+        justify-content: space-around;
+      }
+      #voter_id_number {
+        font-weight: bold;
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="left_side">
+        <p>A Party : <span id="A-party">0</span>%</p>
+        <p>B Party : <span id="B-party">0</span>%</p>
+        <p>C Party : <span id="C-party">0</span>%</p>
+      </div>
+      <div class="right_side">
+        <p>Your voter ID number : <span id="voter_id_number"></span></p>
+        <form id="voting_form">
+          <input
+            type="text"
+            placeholder="voter ID"
+            id="user_votingID"
+            required
+          />
+          <select id="selected_party">
+            <option value="A party">A party</option>
+            <option value="B party">B party</option>
+            <option value="C party">C party</option>
+          </select>
+          <input type="submit" value="Vote" />
+        </form>
+      </div>
+      <!-- thanku popup -->
+    </div>
+    <div>
+      <h1 id="thank"></h1>
+    </div>
+
+    <script>
+      const socket = io("http://localhost:4500", { transports: ["websocket"] });
+      const voter_id = document.getElementById("voter_id_number");
+      const formEl = document.getElementById("voting_form");
+      const A_party_percentage = document.getElementById("A-party");
+      const B_party_percentage = document.getElementById("B-party");
+      const C_party_percentage = document.getElementById("C-party");
+      const thankYou = document.getElementById("thank");
+
+      // gettig voter id
+      socket.on("join", (voterId) => {
+        voter_id.textContent = voterId;
+      });
+
+      // handling voting form
+      formEl.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const voting_Id = formEl.user_votingID.value;
+        const voteFor = formEl.selected_party.value;
+        // voting
+        socket.emit("vote", voting_Id, voteFor);
+        thankYou.textContent = "Thank you for your vote 👍";
+      });
+
+      // wrong id
+      socket.on("wrong_id", (err) => {
+        thankYou.textContent = err;
+      });
+
+      // new vote made
+      socket.on("voteMade", (a_party, b_party, c_party) => {
+        const total_votes = Number(a_party) + Number(b_party) + Number(c_party);
+        A_party_percentage.textContent = (
+          (a_party * 100) /
+          total_votes
+        ).toFixed(2);
+        B_party_percentage.textContent = (
+          (b_party * 100) /
+          total_votes
+        ).toFixed(2);
+        C_party_percentage.textContent = (
+          (c_party * 100) /
+          total_votes
+        ).toFixed(2);
+      });
+    </script>
+  </body>
+</html>
